@@ -35,7 +35,7 @@ function m.files(prj)
 	local tr = project.getsourcetree(prj)
 	tree.traverse(tr, {
 		onleaf = function(node, depth)
-		
+
 			_p(depth, '"%s"', path.getrelative(prj.workspace.location, node.abspath))
 
 			-- add generated files
@@ -185,29 +185,25 @@ function m.generate(prj)
 		end
 
 		-- setting build options
-		all_build_options = ""
-		for _, option in ipairs(cfg.buildoptions) do
-			all_build_options = all_build_options .. option .. " "
-		end
-		
-		if all_build_options ~= "" then
+		if #cfg.buildoptions > 0 then
 			_p('if(CMAKE_BUILD_TYPE STREQUAL %s)', cmake.cfgname(cfg))
-			_p(1, 'set_target_properties("%s" PROPERTIES COMPILE_FLAGS %s)', prj.name, all_build_options)
+			_p(1, 'set(_TARGET_COMPILE_FLAGS %s)', table.concat(cfg.buildoptions, ' '))
+			_p(1, 'string(REPLACE ";" " " _TARGET_COMPILE_FLAGS "${_TARGET_COMPILE_FLAGS}")')
+			_p(1, 'set_property(TARGET "%s" PROPERTY COMPILE_FLAGS ${_TARGET_COMPILE_FLAGS})', prj.name)
+			_p(1, 'unset(_TARGET_COMPILE_FLAGS)')
 			_p('endif()')
 		end
 
 		-- setting link options
-		all_link_options = ""
-		for _, option in ipairs(cfg.linkoptions) do
-			all_link_options = all_link_options .. option .. " "
-		end
-
-		if all_link_options ~= "" then
+		if #cfg.linkoptions > 0 then
 			_p('if(CMAKE_BUILD_TYPE STREQUAL %s)', cmake.cfgname(cfg))
-			_p(1, 'set_target_properties("%s" PROPERTIES LINK_FLAGS "%s")', prj.name, all_link_options)
+			_p(1, 'set(_TARGET_LINK_FLAGS %s)', table.concat(cfg.linkoptions, ' '))
+			_p(1, 'string(REPLACE ";" " " _TARGET_LINK_FLAGS "${_TARGET_COMPILE_FLAGS}")')
+			_p(1, 'set_property(TARGET "%s" PROPERTY LINK_FLAGS ${_TARGET_LINK_FLAGS})', prj.name)
+			_p(1, 'unset(_TARGET_LINK_FLAGS)')
 			_p('endif()')
 		end
-		
+
 		if #toolset.getcflags(cfg) > 0 or #toolset.getcxxflags(cfg) > 0 then
 			_p('target_compile_options("%s" PRIVATE', prj.name)
 
